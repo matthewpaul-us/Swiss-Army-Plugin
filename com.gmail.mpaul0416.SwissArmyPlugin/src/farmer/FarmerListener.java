@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.CropState;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -231,8 +232,11 @@ public class FarmerListener implements Listener {
 			// If the player has bonemeal and the block isn't ripe, it needs bonemeal
 			if (isBoneMeal(equippedItem) &&
 					!isCropInState(block, CropState.RIPE)) {
-				util.Utility.decrementItemInHandAmount(player);
-
+				
+				// If the player is in survival mode, decrement bonemeal
+				if (player.getGameMode() == GameMode.SURVIVAL) {
+					util.Utility.decrementItemInHandAmount(player);
+				}
 				block.setTypeIdAndData(Material.CROPS.getId(), CropState.RIPE.getData(), true);
 			}
 
@@ -251,9 +255,6 @@ public class FarmerListener implements Listener {
 			recursiveBonemeal(player, targetBlock, visitedBlocks);
 		}
 	}
-
-
-
 
 	private boolean isBoneMeal(ItemStack equippedItem) {
 		return equippedItem.getType() == Material.INK_SACK && 	// Check if it's bonemeal like
@@ -324,31 +325,18 @@ public class FarmerListener implements Listener {
 	 * @param block - the block to recursively plant on
 	 */
 	private void recursivePlant(Player player, Block block) {
+		// Get the seeds in the players hand
+		ItemStack seedsInHand = player.getItemInHand();
+		
 		// If the block is soil
 		if (isSoil(block) && 
-				block.getRelative(BlockFace.UP).getType() != Material.CROPS) {
+				block.getRelative(BlockFace.UP).getType() != Material.CROPS &&
+				isSeed(seedsInHand)) {
 
-			// Get the seeds in the players hand
-			ItemStack seedsInHand = player.getItemInHand();
-
-			// Get the seeds left
-			int seedsLeft = seedsInHand.getAmount();
-
-			// If we ran out of seeds, stop planting
-			if (seedsLeft <= 0) {
-
-				// If the player has no more seeds, remove them from his hand
-				return;
-			}
-
-
-
-			// plant the seeds and reduce the amount of seeds by one
+			// plant the seeds and reduce the amount of seeds by one, if the player is in survival mode
 			block.getRelative(BlockFace.UP).setType(Material.CROPS);
-			seedsInHand.setAmount(--seedsLeft);
-
-			if (seedsLeft <= 0) {
-				player.setItemInHand(null);
+			if (player.getGameMode() == GameMode.SURVIVAL) {
+				util.Utility.decrementItemInHandAmount(player);
 			}
 
 

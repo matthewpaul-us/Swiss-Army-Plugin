@@ -12,6 +12,7 @@
 package lumberjack;
 
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -264,10 +265,19 @@ public class LumberJackListener implements Listener
 
 
 
+	/**
+	 * Recursively removes logs and leaves. Follows all contiguous logs or leaves. <br>        
+	 *
+	 * <hr>
+	 * Date created: Jan 2, 2013 <br>
+	 * Date last modified: Jan 4, 2013 <br>
+	 *
+	 * <hr>
+	 * @param player - The player to reduce the axe uses from
+	 * @param block - The block to check.
+	 */
 	private void removeTree(Player player, Block block)
 	{
-
-
 		// if the block in question is in fact a log...
 		if (block.getType() == Material.LOG ||
 				block.getType() == Material.LEAVES) {
@@ -283,24 +293,33 @@ public class LumberJackListener implements Listener
 			if (isAxe(itemInHand)) {
 				// Increase the durability. This means the tool is getting worse
 
-				// Make leaves count less than one. Keeps bushy trees from killing axes
-				if (block.getType() == Material.LEAVES) {
-					leafCount += leafCost;
-					if (leafCount >= 1) {
-						itemInHand.setDurability((short) (itemInHand.getDurability() + autoLoggerItemDurabilityCost * (int) leafCount));
-						leafCount -= (int) leafCount;
+				// If player is in survival mode, subtract uses from the axe 
+				if (player.getGameMode() == GameMode.SURVIVAL) {
+					// Make leaves count less than one. Keeps bushy trees from killing axes
+					if (block.getType() == Material.LEAVES) {
+						leafCount += leafCost;
+						if (leafCount >= 1) {
+							itemInHand
+									.setDurability((short) (itemInHand
+											.getDurability() + autoLoggerItemDurabilityCost
+											* (int) leafCount));
+							leafCount -= (int) leafCount;
+						}
+					} else {
+						itemInHand
+								.setDurability((short) (itemInHand
+										.getDurability() + autoLoggerItemDurabilityCost));
 					}
-				}
-				else {
-					itemInHand.setDurability((short) (itemInHand.getDurability() + autoLoggerItemDurabilityCost));
-				}
-				// If the tool is past its breaking point
-				if (itemInHand.getDurability() > itemInHand.getType().getMaxDurability()) {
-					// Remove the tool from his inventory
-					player.setItemInHand(null);
-					// Play the tool break sound effect
-					player.playSound(player.getLocation(), Sound.ITEM_BREAK, 10, 1);
-					//player.getLocation().getWorld().playSound(player.getLocation(), Sound.ITEM_BREAK, 10, 1);
+					// If the tool is past its breaking point
+					if (itemInHand.getDurability() > itemInHand.getType()
+							.getMaxDurability()) {
+						// Remove the tool from his inventory
+						player.setItemInHand(null);
+						// Play the tool break sound effect
+						player.playSound(player.getLocation(),
+								Sound.ITEM_BREAK, 10, 1);
+						//player.getLocation().getWorld().playSound(player.getLocation(), Sound.ITEM_BREAK, 10, 1);
+					}
 				}
 			}
 			else {
