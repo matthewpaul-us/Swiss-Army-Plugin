@@ -11,10 +11,13 @@
 
 package lumberjack;
 
+import java.util.LinkedList;
+
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -264,84 +267,47 @@ public class LumberJackListener implements Listener
 	}
 
 
-
-	/**
-	 * Recursively removes logs and leaves. Follows all contiguous logs or leaves. <br>        
-	 *
-	 * <hr>
-	 * Date created: Jan 2, 2013 <br>
-	 * Date last modified: Jan 4, 2013 <br>
-	 *
-	 * <hr>
-	 * @param player - The player to reduce the axe uses from
-	 * @param block - The block to check.
-	 */
 	private void removeTree(Player player, Block block)
 	{
-		// if the block in question is in fact a log...
-		if (block.getType() == Material.LOG ||
-				block.getType() == Material.LEAVES) {
-
-
-
-			// Act like the player broke the block
-			block.breakNaturally();
-			// Get the item in the players hand
-			ItemStack itemInHand = player.getItemInHand();
-
-			// Make sure it is actually an axe
-			if (isAxe(itemInHand)) {
-				// Increase the durability. This means the tool is getting worse
-
-				// If player is in survival mode, subtract uses from the axe 
+		LinkedList<Block> blockQueue = new LinkedList<Block>();
+		blockQueue.add(block);
+		
+		// While the player still has an axe and there are blocks
+		// left, keep removing stuff.
+		while (isAxe(player.getItemInHand()) &&
+				!blockQueue.isEmpty()) {
+			// Get the block in question
+			block = blockQueue.pop();
+			
+			// Make sure it's a wood/leaf block before tearing it up
+			if (isWoodBlock(block) ||
+					block.getType() == Material.LEAVES) {
+				// Break the block
+				block.breakNaturally();
+				// Weaken the axe if player is in survival mode
 				if (player.getGameMode() == GameMode.SURVIVAL) {
-					// Make leaves count less than one. Keeps bushy trees from killing axes
 					if (block.getType() == Material.LEAVES) {
 						leafCount += leafCost;
 						if (leafCount >= 1) {
-							Utility.weakenToolInHand(player, 
+							Utility.weakenToolInHand(
+									player,
 									(short) (autoLoggerItemDurabilityCost * (int) leafCount));
 							leafCount -= (int) leafCount;
 						}
 					} else {
-						Utility.weakenToolInHand(player, (short) autoLoggerItemDurabilityCost);
+						Utility.weakenToolInHand(player,
+								(short) autoLoggerItemDurabilityCost);
 					}
 				}
+				// Add the adjacent blocks to the queue
+				blockQueue.add(block.getRelative(BlockFace.UP));
+				blockQueue.add(block.getRelative(BlockFace.DOWN));
+				blockQueue.add(block.getRelative(BlockFace.NORTH));
+				blockQueue.add(block.getRelative(BlockFace.SOUTH));
+				blockQueue.add(block.getRelative(BlockFace.EAST));
+				blockQueue.add(block.getRelative(BlockFace.WEST));
 			}
-			else {
-				// If we reached here, it's not an axe and we can stop cutting trees
-				return;
-			}
-
-
-			// Look at each block around it
-
-			// Get the block above
-			Block targetBlock = block.getRelative(0, 1, 0);
-
-			removeTree(player, targetBlock);
-
-			// Get the block below
-			targetBlock = block.getRelative(0, -1, 0);
-			removeTree(player, targetBlock);
-
-			// Get the block in front
-			targetBlock = block.getRelative(0, 0, -1);
-			removeTree(player, targetBlock);
-
-			// Get the block behind
-			targetBlock = block.getRelative(0, 0, 1);
-			removeTree(player, targetBlock);
-
-			// Get the block to one side
-			targetBlock = block.getRelative(1, 0, 0);
-			removeTree(player, targetBlock);
-
-			// Get the block to the other side
-			targetBlock = block.getRelative(-1, 0, 0);
-			removeTree(player, targetBlock);
 		}
-
 	}
 
 	/**

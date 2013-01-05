@@ -5,9 +5,9 @@ A utilitarian plugin for Bukkit.
 
 Programmed by: Matthew Paul, mpaul0416@gmail.com
 Date Created: January 1, 2013
-Lase updated: January 4, 2013
+Lase updated: January 5, 2013
 
-Version 1.1.3
+Version 1.1.4
 
 This plugin adds several features to a bukkit server.
 
@@ -48,9 +48,21 @@ DIRECTIONS TO GO
 Add support for permissions
 Add support for potatos and carrots
 Add support for creative mode
-Add shepard feature
+Add shepherd feature
 
 CHANGE-LOG
+
+1.1.4
+New Features:
+Added support for potatoes and carrots
+Added support for creative mode
+Bug-Fixes:
+Fixed bug with non-farmers being able to recursively harvest
+Fixed potential stack overflow with the lumberjack module
+
+Behind the Scenes:
+Refactored recursive lumberjack call into iterative call to avoid stack overflow
+
 
 1.1.3
 Moved project onto GitHub
