@@ -162,8 +162,11 @@ public class FarmerListener implements Listener {
 			// Get the block below
 			block = block.getRelative(BlockFace.DOWN);
 
-			// Recursively harvest the wheat
-			recursiveHarvest(block, new ArrayList<Block>());
+			// If the player is a farmer, harvest the wheat
+			if (isFarmer(event.getPlayer())) {
+				// Recursively harvest the wheat
+				recursiveHarvest(block, new ArrayList<Block>());
+			}
 		}
 	}
 
