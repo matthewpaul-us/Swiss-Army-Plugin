@@ -14,7 +14,6 @@ package lumberjack;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,6 +24,7 @@ import org.bukkit.inventory.ItemStack;
 
 import util.ConfigurationHandler;
 import util.MetadataHandler;
+import util.Utility;
 
 
 /**
@@ -299,26 +299,12 @@ public class LumberJackListener implements Listener
 					if (block.getType() == Material.LEAVES) {
 						leafCount += leafCost;
 						if (leafCount >= 1) {
-							itemInHand
-									.setDurability((short) (itemInHand
-											.getDurability() + autoLoggerItemDurabilityCost
-											* (int) leafCount));
+							Utility.weakenToolInHand(player, 
+									(short) (autoLoggerItemDurabilityCost * (int) leafCount));
 							leafCount -= (int) leafCount;
 						}
 					} else {
-						itemInHand
-								.setDurability((short) (itemInHand
-										.getDurability() + autoLoggerItemDurabilityCost));
-					}
-					// If the tool is past its breaking point
-					if (itemInHand.getDurability() > itemInHand.getType()
-							.getMaxDurability()) {
-						// Remove the tool from his inventory
-						player.setItemInHand(null);
-						// Play the tool break sound effect
-						player.playSound(player.getLocation(),
-								Sound.ITEM_BREAK, 10, 1);
-						//player.getLocation().getWorld().playSound(player.getLocation(), Sound.ITEM_BREAK, 10, 1);
+						Utility.weakenToolInHand(player, (short) autoLoggerItemDurabilityCost);
 					}
 				}
 			}
