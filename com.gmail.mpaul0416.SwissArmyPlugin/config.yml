@@ -1,6 +1,0 @@
-lumberjack:
-  metadataKey: lumberjackStatus
-  logDurabilityCost: 1
-  leafDurabilityCost: 0.2
-farmer:
-  metadataKey: farmerStatus
