@@ -41,6 +41,8 @@ public class Utility {
 		// Get the item involved
 		ItemStack equippedItem = player.getItemInHand();
 		
+		player.sendMessage("Amount before decrement: " + equippedItem.getAmount());
+		
 		//Decrement the amount
 		equippedItem.setAmount(equippedItem.getAmount() - 1);
 		

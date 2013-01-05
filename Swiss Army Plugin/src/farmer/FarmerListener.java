@@ -13,6 +13,7 @@
 package farmer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.ChatColor;
@@ -57,6 +58,9 @@ public class FarmerListener implements Listener {
 	
 	// Default Values
 	private static final String FARMER_STATUS = "farmerStatus";
+	
+	// Mapping for crops
+	private HashMap<Material, Material> seedCropMap;
 
 	/**
 	 * Constructor <br>        
@@ -76,10 +80,29 @@ public class FarmerListener implements Listener {
 		this.configHandler = configHandler;
 
 		// Read in the file configuration
-//		FileConfiguration config = metaHandler.getPlugin().getConfig();
-
 		loadSettingsFromConfigFile();
 		
+		// Initialize the hashmap
+		initializeSeedCropMap();
+		
+	}
+
+	/**
+	 * Initializes the mapping between the seeds and the crops. <br>        
+	 *
+	 * <hr>
+	 * Date created: Jan 5, 2013 <br>
+	 * Date last modified: Jan 5, 2013 <br>
+	 *
+	 * <hr>
+	 */
+	private void initializeSeedCropMap() {
+		seedCropMap = new HashMap<Material, Material>();
+		
+		//Add the values
+		seedCropMap.put(Material.SEEDS, Material.CROPS);
+		seedCropMap.put(Material.POTATO_ITEM, Material.POTATO);
+		seedCropMap.put(Material.CARROT_ITEM, Material.CARROT);
 	}
 
 	/**
@@ -144,7 +167,7 @@ public class FarmerListener implements Listener {
 			// auto-plant the seeds.
 			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) &&
 					isFarmer(player) &&
-					isSeed(equippedItem) &&
+					isCropSeed(equippedItem) &&
 					isSoil(block)) {
 				recursivePlant(player, block);
 			}
@@ -169,7 +192,7 @@ public class FarmerListener implements Listener {
 			}
 		}
 	}
-
+	
 	/**
 	 * Determine whether crop is in a certain crop state. <br>        
 	 *
@@ -182,7 +205,7 @@ public class FarmerListener implements Listener {
 	 * @param cropState - The crop state to match. If null, crop state will not matter.
 	 */
 	private boolean isCropInState(Block block, CropState cropState){
-		return block.getType() == Material.CROPS && 
+		return isCropBlock(block) && 
 				(cropState != null? block.getData() == cropState.getData():
 					true);
 	}
@@ -202,7 +225,8 @@ public class FarmerListener implements Listener {
 			Block block = event.getClickedBlock();
 
 			// if seeds were clicked
-			if (isPlayerGrowingWheatWithBonemeal(block, equippedItem, event.getAction())) {
+			if (isFarmer(player) &&
+					isPlayerGrowingWheatWithBonemeal(block, equippedItem, event.getAction())) {
 				recursiveBonemeal(player, block, new ArrayList<Block>());
 			}
 		}
@@ -240,7 +264,9 @@ public class FarmerListener implements Listener {
 				if (player.getGameMode() == GameMode.SURVIVAL) {
 					util.Utility.decrementItemInHandAmount(player);
 				}
-				block.setTypeIdAndData(Material.CROPS.getId(), CropState.RIPE.getData(), true);
+//				block.setTypeIdAndData(block.getTypeId(), CropState.RIPE.getData(), true);
+				block.setData(CropState.RIPE.getData());
+
 			}
 
 			// Recurse through each cardinal direction
@@ -267,7 +293,6 @@ public class FarmerListener implements Listener {
 	private boolean isPlayerGrowingWheatWithBonemeal(Block block,
 			ItemStack equippedItem, Action action)
 	{
-
 		return isCropInState(block, null) &&	// Check if its crops
 				!isCropInState(block, CropState.RIPE) &&	// Check if it's not ripe
 				isBoneMeal(equippedItem) &&	// Check if its bonemeal
@@ -293,9 +318,8 @@ public class FarmerListener implements Listener {
 			// Get the block above
 			Block blockAbove = block.getRelative(BlockFace.UP);
 
-			// See if it is wheat that needs harvesting
-			if (blockAbove.getType() == Material.CROPS && 
-					blockAbove.getData() == 7) {
+			// See if it is a crop that needs harvesting
+			if (isCropInState(blockAbove, CropState.RIPE)) {
 				// Break the blocks above
 				blockAbove.breakNaturally();
 			}
@@ -328,17 +352,26 @@ public class FarmerListener implements Listener {
 	 * @param block - the block to recursively plant on
 	 */
 	private void recursivePlant(Player player, Block block) {
+		
 		// Get the seeds in the players hand
 		ItemStack seedsInHand = player.getItemInHand();
 		
+		// Get the material to plant with
+		Material cropToPlant = seedCropMap.get(seedsInHand.getType());
+
+		
 		// If the block is soil
 		if (isSoil(block) && 
-				block.getRelative(BlockFace.UP).getType() != Material.CROPS &&
-				isSeed(seedsInHand)) {
+				block.getRelative(BlockFace.UP).getType() == Material.AIR &&
+				isCropSeed(seedsInHand)) {
 
-			// plant the seeds and reduce the amount of seeds by one, if the player is in survival mode
-			block.getRelative(BlockFace.UP).setType(Material.CROPS);
+			// plant the seeds 
+			
+			block.getRelative(BlockFace.UP).setType(cropToPlant);
+			
+			// reduce the amount of seeds by one, if the player is in survival mode
 			if (player.getGameMode() == GameMode.SURVIVAL) {
+				player.sendMessage("Decrementing item in hand");
 				util.Utility.decrementItemInHandAmount(player);
 			}
 
@@ -441,22 +474,44 @@ public class FarmerListener implements Listener {
 	}
 
 	/**
-	 * Determines whether the specified item is seed. <br>        
+	 * Determines whether the specified item is plantable. <br>        
 	 *
 	 * <hr>
 	 * Date created: Jan 2, 2013 <br>
-	 * Date last modified: Jan 2, 2013 <br>
+	 * Date last modified: Jan 4, 2013 <br>
 	 *
 	 * <hr>
 	 * @param item - item to check
-	 * @return true if it is seed, false otherwise.
+	 * @return true if it is a crop, false otherwise.
 	 */
-	private boolean isSeed(ItemStack item)
+	private boolean isCropSeed(ItemStack item)
 	{
-		// Get the material that the item is made of
-		Material itemMaterial = item.getType();
-
-		// Return true if the item is an axe, false otherwise
-		return itemMaterial == Material.SEEDS;
+		// Make sure there is an item, if not, the player's not holding anything
+		if (item != null) {
+			// Return true if the item is a crop, false otherwise
+			return seedCropMap.keySet().contains(item.getType());
+		}
+		else {
+			return false;
+		}
 	}
+	
+	/**
+	 * Determines whether it is a crop dealt with in this plugin <br>        
+	 *
+	 * <hr>
+	 * Date created: Jan 5, 2013 <br>
+	 * Date last modified: Jan 5, 2013 <br>
+	 *
+	 * <hr>
+	 * @param block
+	 * @return
+	 */
+	private boolean isCropBlock(Block block)
+	{
+		// See if the crop is in the seedCropMap's values
+		return seedCropMap.values().contains(block.getType());
+	}
+	
+	
 }
